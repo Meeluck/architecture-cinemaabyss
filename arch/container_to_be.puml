@@ -10,7 +10,7 @@ Person(customer, "Customer", "Пользователь веб, mobile и Smart T
 System_Boundary(cinema, "CinemaAbyss") {
     Container(gw, "API Gateway", "Go", "Единая точка входа в систему. Маршрутизация запросов, базовая авторизация")
     Container(identity, "Identity Service", "Go", "Аутентификация, пользователи, роли, профиль")
-    Container(catalog, "Catalog Service", "Go", "Каталог фильмов, жанры, актёры, описания, поиск")
+    Container(catalog, "Movies(Catalog) Service", "Go", "Каталог фильмов, жанры, актёры, описания, поиск")
     Container(activity, "User Activity Service", "Go", "Избранное, оценки, история и прогресс просмотра")
     Container(billing, "Billing Service", "Go", "Подписки, тарифы, скидки, промокоды, права доступа к контенту")
     Container(payment, "Payment Service", "Go", "Создание платежей и интеграция с внешней платёжной системой")
@@ -20,7 +20,7 @@ System_Boundary(cinema, "CinemaAbyss") {
     Container(recoStore, "Recommendation Service", "Go", "Предоставление готовых рекомендаций пользователю")
     ContainerDb(recoDb, "Recommendation DB", "PostgreSQL/Redis", "Хранение подготовленных рекомендаций по пользователям")
 
-    ContainerDb(identityDb, "Identity DB", "PostgreSQL", "Пользователи, роли, профили")
+    ContainerDb(identityDb, "Movies(Catalog) DB", "PostgreSQL", "Пользователи, роли, профили")
     ContainerDb(catalogDb, "Catalog DB", "PostgreSQL", "Фильмы и метаданные")
     ContainerDb(activityDb, "Activity DB", "PostgreSQL", "Избранное, оценки, история")
     ContainerDb(billingDb, "Billing DB", "PostgreSQL", "Подписки, скидки, права доступа")
