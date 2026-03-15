@@ -1,0 +1,30 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+Title Container AS-IS Diagram for CinemaAbyss System
+
+Person(user, "Customer", "Пользователь веб, mobile и Smart TV клиентов")
+
+
+
+System_Boundary(c1,CinemaAbyss){
+    Container(mon, CinemaAbyss Monolith,Go)
+    ContainerDb(pg,CinemaAbyss Store,PostreSQL)
+}
+
+System_Ext(e_rs,External recommendation system){
+    ContainerQueue(broker,RabbitMq)
+}
+System_Ext(e_ps,External payment system)
+System_Ext(e_omt,Online movie theater)
+System_Ext(e_s3,S3 File store)
+
+Rel(user,mon," ")
+
+Rel(mon,pg,SQL)
+BiRel_Right(mon,broker,AMQP)
+Rel_Left(mon,e_ps," ")
+Rel_Down(mon,e_s3," ")
+Rel_Down(mon,e_omt," ")
+
+@enduml
