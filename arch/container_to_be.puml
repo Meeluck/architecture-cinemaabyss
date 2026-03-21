@@ -8,9 +8,9 @@ title Container To-Be Diagram for CinemaAbyss System
 Person(customer, "Customer", "Пользователь веб, mobile и Smart TV клиентов")
 
 System_Boundary(cinema, "CinemaAbyss") {
-    Container(gw, "API Gateway", "Go", "Единая точка входа в систему. Маршрутизация запросов, базовая авторизация")
+    Container(gw, "API Gateway (Proxy)", "Go", "Единая точка входа в систему. Маршрутизация запросов, базовая авторизация")
     Container(identity, "Identity Service", "Go", "Аутентификация, пользователи, роли, профиль")
-    Container(catalog, "Movies(Catalog) Service", "Go", "Каталог фильмов, жанры, актёры, описания, поиск")
+    Container(movies, "Movies Service", "Go", "Каталог фильмов, жанры, актёры, описания, поиск")
     Container(activity, "User Activity Service", "Go", "Избранное, оценки, история и прогресс просмотра")
     Container(billing, "Billing Service", "Go", "Подписки, тарифы, скидки, промокоды, права доступа к контенту")
     Container(payment, "Payment Service", "Go", "Создание платежей и интеграция с внешней платёжной системой")
@@ -20,13 +20,13 @@ System_Boundary(cinema, "CinemaAbyss") {
     Container(recoStore, "Recommendation Service", "Go", "Предоставление готовых рекомендаций пользователю")
     ContainerDb(recoDb, "Recommendation DB", "PostgreSQL/Redis", "Хранение подготовленных рекомендаций по пользователям")
 
-    ContainerDb(identityDb, "Movies(Catalog) DB", "PostgreSQL", "Пользователи, роли, профили")
-    ContainerDb(catalogDb, "Catalog DB", "PostgreSQL", "Фильмы и метаданные")
+    ContainerDb(identityDb, "Identity DB", "PostgreSQL", "Пользователи, роли, профили")
+    ContainerDb(moviesDb, Movies DB", "PostgreSQL", "Фильмы и метаданные")
     ContainerDb(activityDb, "Activity DB", "PostgreSQL", "Избранное, оценки, история")
     ContainerDb(billingDb, "Billing DB", "PostgreSQL", "Подписки, скидки, права доступа")
     ContainerDb(paymentDb, "Payment DB", "PostgreSQL", "Транзакции и статусы платежей")
 
-    ContainerQueue(broker, "Message Broker", "RabbitMQ", "Асинхронный обмен событиями между сервисами")
+    ContainerQueue(broker, "Broker", "Kafka", "Асинхронный обмен событиями между сервисами")
 }
 
 System_Ext(paymentExt, "External Payment System", "Внешний платёжный провайдер")
@@ -37,7 +37,7 @@ System_Ext(objectStore, "S3 File Store", "Хранилище видеофайл�
 Rel(customer, gw, "Использует", "HTTPS/REST")
 
 Rel(gw, identity, "Маршрутизирует запросы аутентификации и профиля", "HTTPS/REST")
-Rel(gw, catalog, "Маршрутизирует запросы каталога", "HTTPS/REST")
+Rel(gw, movies, "Маршрутизирует запросы каталога", "HTTPS/REST")
 Rel(gw, activity, "Маршрутизирует запросы избранного, оценок и истории", "HTTPS/REST")
 Rel(gw, billing, "Маршрутизирует запросы подписок и скидок", "HTTPS/REST")
 Rel(gw, payment, "Маршрутизирует платёжные запросы", "HTTPS/REST")
@@ -45,7 +45,7 @@ Rel(gw, playback, "Маршрутизирует запросы на просмо
 Rel(gw, recoStore, "Маршрутизирует запросы рекомендаций", "HTTPS/REST")
 
 Rel(identity, identityDb, "Читает/пишет", "SQL")
-Rel(catalog, catalogDb, "Читает/пишет", "SQL")
+Rel(movies, moviesDb, "Читает/пишет", "SQL")
 Rel(activity, activityDb, "Читает/пишет", "SQL")
 Rel(billing, billingDb, "Читает/пишет", "SQL")
 Rel(payment, paymentDb, "Читает/пишет", "SQL")
@@ -54,18 +54,18 @@ Rel_Up(recoIntegration, recoDb, "Сохраняет обновлённые ре�
 
 Rel(billing, payment, "Инициирует оплату подписки или покупки", "HTTPS/REST")
 Rel(payment, paymentExt, "Проводит платёж", "HTTPS/REST")
-Rel(payment, broker, "Публикует PaymentCompleted / PaymentFailed", "AMQP")
-Rel(billing, broker, "Подписывается на события оплаты", "AMQP")
+Rel(payment, broker, "Публикует PaymentCompleted / PaymentFailed", "Kafka protocol (TCP)")
+Rel(billing, broker, "Подписывается на события оплаты", "Kafka protocol (TCP)")
 
 Rel(playback, billing, "Проверяет право доступа к контенту", "HTTPS/REST")
-Rel(playback, catalog, "Получает данные о фильме", "HTTPS/REST")
+Rel(playback, movies, "Получает данные о фильме", "HTTPS/REST")
 Rel(playback, contentExt, "Запрашивает поток/контент", "HTTPS/REST")
 Rel(playback, objectStore, "Получает медиафайлы", "S3 API")
 
-Rel(activity, broker, "Публикует MovieRated / FavoriteAdded / ViewingStarted", "AMQP")
-Rel(recoIntegration, broker, "- Подписывается на события активности пользователя\n -Подписывается на RecommendationUpdated \n -Запрашивает обновление рекомендаций", "AMQP")
+Rel(activity, broker, "Публикует MovieRated / FavoriteAdded / ViewingStarted", "Kafka protocol (TCP)")
+Rel(recoIntegration, broker, "- Подписывается на события активности пользователя\n -Подписывается на RecommendationUpdated \n -Запрашивает обновление рекомендаций", "Kafka protocol (TCP)")
 
-Rel(recommendationExt, broker, "-Публикует RecommendationUpdated\n -Подписывается на обновление рекомендаций", "AMQP")
+Rel(recommendationExt, broker, "-Публикует RecommendationUpdated\n -Подписывается на обновление рекомендаций", "Kafka protocol (TCP)")
 
 SHOW_LEGEND()
 @enduml
