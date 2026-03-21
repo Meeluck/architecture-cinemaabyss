@@ -24,11 +24,11 @@ type Config struct {
 }
 
 type App struct {
-	cfg           Config
-	monolithProxy *httputil.ReverseProxy
-	moviesProxy   *httputil.ReverseProxy
-	eventsProxy   *httputil.ReverseProxy
-	moviesCounter uint64
+	cfg               Config
+	monolithProxy     *httputil.ReverseProxy
+	moviesProxy       *httputil.ReverseProxy
+	eventsProxy       *httputil.ReverseProxy
+	moviesAccumulator uint64
 }
 
 func main() {
@@ -174,10 +174,9 @@ func (a *App) handleProxy(w http.ResponseWriter, r *http.Request) {
 	targetName, proxy := a.chooseProxy(r)
 
 	log.Printf(
-		"route method=%s path=%s query=%q target=%s gradual_migration=%t movies_migration_percent=%d",
+		"route method=%s path=%s target=%s gradual_migration=%t movies_migration_percent=%d",
 		r.Method,
 		r.URL.Path,
-		r.URL.RawQuery,
 		targetName,
 		a.cfg.GradualMigration,
 		a.cfg.MoviesMigrationPercent,
@@ -200,7 +199,6 @@ func (a *App) chooseProxy(r *http.Request) (string, *httputil.ReverseProxy) {
 		if !a.cfg.GradualMigration {
 			return "monolith", a.monolithProxy
 		}
-
 		if a.cfg.MoviesMigrationPercent <= 0 {
 			return "monolith", a.monolithProxy
 		}
@@ -209,13 +207,7 @@ func (a *App) chooseProxy(r *http.Request) (string, *httputil.ReverseProxy) {
 			return "movies-service", a.moviesProxy
 		}
 
-		// Детерминированное распределение:
-		// из каждых 100 запросов первые N идут в movies-service,
-		// остальные в монолит.
-		current := atomic.AddUint64(&a.moviesCounter, 1)
-		slot := int((current - 1) % 100)
-
-		if slot < a.cfg.MoviesMigrationPercent {
+		if shouldGoToMovies(&a.moviesAccumulator, a.cfg.MoviesMigrationPercent) {
 			return "movies-service", a.moviesProxy
 		}
 
@@ -223,6 +215,24 @@ func (a *App) chooseProxy(r *http.Request) (string, *httputil.ReverseProxy) {
 
 	default:
 		return "monolith", a.monolithProxy
+	}
+}
+
+func shouldGoToMovies(acc *uint64, percent int) bool {
+	for {
+		current := atomic.LoadUint64(acc)
+		next := current + uint64(percent)
+
+		if next >= 100 {
+			if atomic.CompareAndSwapUint64(acc, current, next-100) {
+				return true
+			}
+			continue
+		}
+
+		if atomic.CompareAndSwapUint64(acc, current, next) {
+			return false
+		}
 	}
 }
 
