@@ -112,29 +112,10 @@ jobs:
 Как только сборка отработает и в github registry появятся ваши образы, можно переходить к блоку настройки Kubernetes
 Успешным результатом данного шага является "зеленая" сборка и "зеленые" тесты
 
-
 ### Proxy в Kubernetes
 
-В итоге у тебя должно получиться так:
-
-- в Kubernetes подняты:
-  - postgres
-  - kafka + zookeeper
-  - monolith
-  - movies-service
-  - events-service
-  - proxy-service
-- запрос на https://cinemaabyss.example.com/api/movies проходит через Ingress → proxy-service → monolith или movies-service
-- запросы на
-`/api/events/movie`
-`/api/events/user`
-`/api/events/payment`
-тоже проходят через Ingress → proxy-service → events-service, потому что по API все event-эндпоинты находятся за gateway
-- потом ты запускаешь postman-тесты против Kubernetes и показываешь:
-- скрин ответа `/api/movies`
-- скрин логов `events-service`, где видно обработку событий
-
 #### Шаг 1
+
 Для деплоя в kubernetes необходимо залогиниться в docker registry Github'а.
 1. Создайте Personal Access Token (PAT) https://github.com/settings/tokens . Создавайте class с правом read:packages
 2. В src/kubernetes/*.yaml (event-service, monolith, movies-service и proxy-service)  отредактируйте путь до ваших образов 
@@ -376,6 +357,12 @@ minikube tunnel
 Потом вызовите 
 https://cinemaabyss.example.com/api/movies
 и приложите скриншот развертывания helm и вывода https://cinemaabyss.example.com/api/movies
+
+1. установка ![helm_install](/out/test/helm_install.png)
+2. поды ![helm_pods](/out/test/helm_pods.png)
+3. сервисы ![svs](/out/test/helm_svs.png)
+4. curl ![curl](/out/test/helm_curl.png)
+5. логи events после прогона тестов ![events](/out/test/helm_events_logs.png)
 
 ## Удаляем все
 
