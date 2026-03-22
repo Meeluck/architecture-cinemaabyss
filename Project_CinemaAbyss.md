@@ -115,6 +115,25 @@ jobs:
 
 ### Proxy в Kubernetes
 
+В итоге у тебя должно получиться так:
+
+- в Kubernetes подняты:
+  - postgres
+  - kafka + zookeeper
+  - monolith
+  - movies-service
+  - events-service
+  - proxy-service
+- запрос на https://cinemaabyss.example.com/api/movies проходит через Ingress → proxy-service → monolith или movies-service
+- запросы на
+`/api/events/movie`
+`/api/events/user`
+`/api/events/payment`
+тоже проходят через Ingress → proxy-service → events-service, потому что по API все event-эндпоинты находятся за gateway
+- потом ты запускаешь postman-тесты против Kubernetes и показываешь:
+- скрин ответа `/api/movies`
+- скрин логов `events-service`, где видно обработку событий
+
 #### Шаг 1
 Для деплоя в kubernetes необходимо залогиниться в docker registry Github'а.
 1. Создайте Personal Access Token (PAT) https://github.com/settings/tokens . Создавайте class с правом read:packages
@@ -277,6 +296,11 @@ cat .docker/config.json | base64
 
 #### Шаг 3
 Добавьте сюда скриншота вывода при вызове https://cinemaabyss.example.com/api/movies и  скриншот вывода event-service после вызова тестов.
+
+1. Вывод при вызове `http://cinemaabyss.example.com/api/movies`
+![kub_curl](/out/test/kub_curl.png)
+2. Логи Events после прогона тестов
+![kub_events](/out/test/kub_events.png)
 
 
 # Задание 4
