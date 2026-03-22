@@ -1,0 +1,71 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+LAYOUT_WITH_LEGEND()
+
+title Container To-Be Diagram for CinemaAbyss System
+
+Person(customer, "Customer", "Пользователь веб, mobile и Smart TV клиентов")
+
+System_Boundary(cinema, "CinemaAbyss") {
+    Container(gw, "API Gateway (Proxy)", "Go", "Единая точка входа в систему. Маршрутизация запросов, базовая авторизация")
+    Container(identity, "Identity Service", "Go", "Аутентификация, пользователи, роли, профиль")
+    Container(movies, "Movies Service", "Go", "Каталог фильмов, жанры, актёры, описания, поиск")
+    Container(activity, "User Activity Service", "Go", "Избранное, оценки, история и прогресс просмотра")
+    Container(billing, "Billing Service", "Go", "Подписки, тарифы, скидки, промокоды, права доступа к контенту")
+    Container(payment, "Payment Service", "Go", "Создание платежей и интеграция с внешней платёжной системой")
+    Container(playback, "Playback Service", "Go", "Проверка доступа к просмотру, выдача ссылки или токена на контент")
+
+    Container(recoIntegration, "Recommendation ACL", "Go", "Интеграция с внешней рекомендательной системой, отправка запросов на обновление рекомендаций")
+    Container(recoStore, "Recommendation Service", "Go", "Предоставление готовых рекомендаций пользователю")
+    ContainerDb(recoDb, "Recommendation DB", "PostgreSQL/Redis", "Хранение подготовленных рекомендаций по пользователям")
+
+    ContainerDb(identityDb, "Identity DB", "PostgreSQL", "Пользователи, роли, профили")
+    ContainerDb(moviesDb, Movies DB", "PostgreSQL", "Фильмы и метаданные")
+    ContainerDb(activityDb, "Activity DB", "PostgreSQL", "Избранное, оценки, история")
+    ContainerDb(billingDb, "Billing DB", "PostgreSQL", "Подписки, скидки, права доступа")
+    ContainerDb(paymentDb, "Payment DB", "PostgreSQL", "Транзакции и статусы платежей")
+
+    ContainerQueue(broker, "Broker", "Kafka", "Асинхронный обмен событиями между сервисами")
+}
+
+System_Ext(paymentExt, "External Payment System", "Внешний платёжный провайдер")
+System_Ext(recommendationExt, "External Recommendation System", "Внешняя рекомендательная система")
+System_Ext(contentExt, "Online Movie Theater / Content Provider", "Внешний поставщик видеоконтента")
+System_Ext(objectStore, "S3 File Store", "Хранилище видеофайлов и медиа-объектов")
+
+Rel(customer, gw, "Использует", "HTTPS/REST")
+
+Rel(gw, identity, "Маршрутизирует запросы аутентификации и профиля", "HTTPS/REST")
+Rel(gw, movies, "Маршрутизирует запросы каталога", "HTTPS/REST")
+Rel(gw, activity, "Маршрутизирует запросы избранного, оценок и истории", "HTTPS/REST")
+Rel(gw, billing, "Маршрутизирует запросы подписок и скидок", "HTTPS/REST")
+Rel(gw, payment, "Маршрутизирует платёжные запросы", "HTTPS/REST")
+Rel(gw, playback, "Маршрутизирует запросы на просмотр контента", "HTTPS/REST")
+Rel(gw, recoStore, "Маршрутизирует запросы рекомендаций", "HTTPS/REST")
+
+Rel(identity, identityDb, "Читает/пишет", "SQL")
+Rel(movies, moviesDb, "Читает/пишет", "SQL")
+Rel(activity, activityDb, "Читает/пишет", "SQL")
+Rel(billing, billingDb, "Читает/пишет", "SQL")
+Rel(payment, paymentDb, "Читает/пишет", "SQL")
+Rel(recoStore, recoDb, "Читает рекомендации", "SQL/Cache")
+Rel_Up(recoIntegration, recoDb, "Сохраняет обновлённые рекомендации", "SQL/Cache")
+
+Rel(billing, payment, "Инициирует оплату подписки или покупки", "HTTPS/REST")
+Rel(payment, paymentExt, "Проводит платёж", "HTTPS/REST")
+Rel(payment, broker, "Публикует PaymentCompleted / PaymentFailed", "Kafka protocol (TCP)")
+Rel(billing, broker, "Подписывается на события оплаты", "Kafka protocol (TCP)")
+
+Rel(playback, billing, "Проверяет право доступа к контенту", "HTTPS/REST")
+Rel(playback, movies, "Получает данные о фильме", "HTTPS/REST")
+Rel(playback, contentExt, "Запрашивает поток/контент", "HTTPS/REST")
+Rel(playback, objectStore, "Получает медиафайлы", "S3 API")
+
+Rel(activity, broker, "Публикует MovieRated / FavoriteAdded / ViewingStarted", "Kafka protocol (TCP)")
+Rel(recoIntegration, broker, "- Подписывается на события активности пользователя\n -Подписывается на RecommendationUpdated \n -Запрашивает обновление рекомендаций", "Kafka protocol (TCP)")
+
+Rel(recommendationExt, broker, "-Публикует RecommendationUpdated\n -Подписывается на обновление рекомендаций", "Kafka protocol (TCP)")
+
+SHOW_LEGEND()
+@enduml
