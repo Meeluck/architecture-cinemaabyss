@@ -92,7 +92,7 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=sha,format=short
             type=ref,event=branch
-            type=raw,value=latest,enable={{is_default_branch}}
+            latest
 
       - name: Build and push Events Service Docker image
         uses: docker/build-push-action@v6
@@ -114,7 +114,7 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=sha,format=short
             type=ref,event=branch
-            type=raw,value=latest,enable={{is_default_branch}}
+            latest
 
       - name: Build and push Proxy Service Docker image
         uses: docker/build-push-action@v6
